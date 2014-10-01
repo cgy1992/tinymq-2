@@ -1007,7 +1007,7 @@ int net_msg_proto_read_handler( int ev , int ec , struct net_connection_t* conn 
             void* buf = net_buffer_consume(&(conn->in),&buf_sz);
             int ret = proto_request_parse(parser,buf,buf_sz);
             struct sockaddr_in peer_addr;
-            int sz = sizeof(peer_addr);
+            socklen_t sz = sizeof(peer_addr);
             if( ret < 0 ) {
                 // We have an error , just handle it at once
                 char buf[256];
