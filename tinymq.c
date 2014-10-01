@@ -14,7 +14,10 @@
 
 #ifdef _WIN32
 #include <Windows.h>
-#endif // _WIN32
+#else
+#include <arpa/inet.h>
+#include <signal.h>
+#endif
 
 #define MINOR_VERSION 0
 #define MAJOR_VERSION 1
@@ -1042,7 +1045,6 @@ int net_msg_proto_read_handler( int ev , int ec , struct net_connection_t* conn 
 }
 
 int net_msg_accept( int err_code , struct net_server_t* ser, struct net_connection_t* connection ) {
-    (void*)ser;
     if( err_code == 0 ) {
         struct proto_parser_t* p = malloc( sizeof(struct proto_parser_t) );
         proto_parser_init(p);
@@ -1058,7 +1060,7 @@ int net_msg_accept( int err_code , struct net_server_t* ser, struct net_connecti
 const char* get_fatal_error_str() {
 #ifdef _WIN32
     LPSTR s = NULL;
-    FormatMessageA(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS, 
+    FormatMessageA(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
         NULL, WSAGetLastError(),
         MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
         s, 0, NULL);
@@ -1068,7 +1070,31 @@ const char* get_fatal_error_str() {
 #endif // _WIN32
 }
 
+void tinymq_stop( int val ) {
+    // The only thread safe function for our network library
+    net_server_wakeup(&SERVER);
+}
+
+#ifdef _WIN32
+BOOL WINAPI tinymq_stop_win32( DWORD val ) {
+    tinymq_stop(0);
+    return TRUE;
+}
+#endif // _WIN32
+
+void install_term_handler() {
+#ifdef _WIN32
+    SetConsoleCtrlHandler(tinymq_stop_win32,TRUE);
+#else
+    signal(SIGTERM,tinymq_stop);
+    signal(SIGINT,tinymq_stop);
+    signal(SIGTSTP,tinymq_stop);
+#endif
+}
+
 int tinymq_start( const char* addr , const char* log_option ) {
+    int wakeup;
+    install_term_handler();
     // initialize the MSG_TABLE
     msg_table_init(&MSG_TABLE);
     // parsing the log option
@@ -1086,10 +1112,14 @@ int tinymq_start( const char* addr , const char* log_option ) {
         return -1;
     msg_log(LOG_INFO,"%s\n","The tinymq server starts!");
     for( ;; ) {
-        if( net_server_poll(&SERVER,-1) <0 ) {
+        if( net_server_poll(&SERVER,-1,&wakeup) <0 ) {
             msg_log(LOG_ERROR,"A fatal error:%s has happened,the server aborts!",
                 get_fatal_error_str());
             return -1;
+        } else if( wakeup ) {
+            net_server_destroy(&SERVER);
+            msg_log(LOG_INFO,"%s","The server stops!");
+            return 0;
         }
     }
     return 0;
