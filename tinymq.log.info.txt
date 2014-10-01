@@ -1,1 +1,0 @@
-[INFO]:The tinymq server starts!
