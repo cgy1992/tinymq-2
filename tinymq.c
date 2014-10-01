@@ -269,9 +269,7 @@ int msg_table_remove( struct msg_table_t* table , const char* name , void** data
     return 0;
 }
 
-// NetMessage handler, this handler is just for receiving the message request
-// once an accept happened , this handler is eager to read a request and then
-// start doing its job. The protocol is a simple text based protocol:
+// The protocol is a simple text based protocol:
 // 1 : PUT 1.0 T1000|L1000 100 Name1
 // 2 : --- data ---
 
