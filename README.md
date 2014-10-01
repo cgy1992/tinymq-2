@@ -55,10 +55,10 @@ For time, you specify the milliseconds this message could live;for visit times, 
 message to be GET. And you could also use combination operator to define combination of these two elements. 
 Example:
 
-1.L1000 : visit 1000 times and then delete it
-2.T10000: after 10 seconds and then delete it
-3.L1000|T10000: delete it after 10 seconds or 1000 times visit, whichever comes first
-4.L1000&T10000: 10 seconds and 1000 times visit both satisfy and then delete it
+1. L1000 : visit 1000 times and then delete it
+2. T10000: after 10 seconds and then delete it
+3. L1000|T10000: delete it after 10 seconds or 1000 times visit, whichever comes first
+4. L1000&T10000: 10 seconds and 1000 times visit both satisfy and then delete it
 
 ###Reply
 For the reply, it is very simple:
