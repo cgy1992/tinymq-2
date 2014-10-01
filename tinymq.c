@@ -28,7 +28,6 @@
 #define INIT_MSGTABLE_LEN 1024
 #define REHASH_FACTOR 3
 
-
 #ifdef __cplusplus
 extern "C" {
 #endif // __cplusplus
@@ -811,6 +810,8 @@ void proto_parser_clear( struct proto_parser_t* parser ) {
 static struct msg_table_t MSG_TABLE; // Our global message table
 struct net_server_t SERVER; // Net server
 
+#define CONNECTION_TIMEOUT 30000 // 30 seconds
+
 struct msg_get_t {
     int timeout;
     int freq;
@@ -882,7 +883,8 @@ int net_handler_get_callback( int ev , int ec , struct net_connection_t* conn ) 
                     net_buffer_produce(&(conn->out),put_msg->data,put_msg->data_len);
                 _net_msg_handle_query(put_msg,get_msg->name);
                 _msg_get_clear(get_msg);
-                return NET_EV_LINGER_SILENT;
+                conn->timeout = CONNECTION_TIMEOUT;
+                return NET_EV_LINGER_SILENT|NET_EV_TIMEOUT;
             }
             --get_msg->freq;
             if( get_msg->freq == 0 ) {
@@ -890,7 +892,8 @@ int net_handler_get_callback( int ev , int ec , struct net_connection_t* conn ) 
                 int header_sz = sprintf(header,"REP %d.%d FAIL 7\r\nTimeout",MAJOR_VERSION,MINOR_VERSION);
                 net_buffer_produce(&(conn->out),header,(size_t)header_sz);
                 free(get_msg);
-                return NET_EV_LINGER_SILENT;
+                conn->timeout = CONNECTION_TIMEOUT;
+                return NET_EV_LINGER_SILENT|NET_EV_TIMEOUT;
             }
             conn->timeout = get_msg->timeout;
             return NET_EV_TIMEOUT;
@@ -989,7 +992,8 @@ int net_handle_request( struct proto_parser_t* parser , struct net_connection_t*
 
         header_sz = sprintf(header,"REP %d.%d OK 0\r\n",MAJOR_VERSION,MINOR_VERSION);
         net_buffer_produce(&(conn->out),header,(size_t)header_sz);
-        return NET_EV_LINGER_SILENT;
+        conn->timeout = CONNECTION_TIMEOUT;
+        return NET_EV_LINGER_SILENT|NET_EV_TIMEOUT;
     }
 }
 
@@ -1027,7 +1031,8 @@ int net_msg_proto_read_handler( int ev , int ec , struct net_connection_t* conn 
                         "The peer:%s:%d has sent us a incorrect protocol!",
                         inet_ntoa(peer_addr.sin_addr),(int)ntohs(peer_addr.sin_port));
                 }
-                return NET_EV_LINGER_SILENT;
+                conn->timeout = CONNECTION_TIMEOUT;
+                return NET_EV_LINGER_SILENT|NET_EV_TIMEOUT;
             } else if( ret == 0 ) {
                 int ev = net_handle_request(parser,conn);
                 // Here we don't call proto_parser_clear since in the net_handle_request function

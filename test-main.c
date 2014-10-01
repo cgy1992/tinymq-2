@@ -331,7 +331,7 @@ void pressure_test() {
     net_server_create(&SERVER,NULL,NULL);
     net_timer(&SERVER,timer_cb,NULL,SCHEDULE_TIME);
     for(;;) {
-        net_server_poll(&SERVER,-1);
+        net_server_poll(&SERVER,-1,NULL);
     }
 }
 
