@@ -34,7 +34,7 @@ void* parse_request( void* rep ,  size_t rep_len , char* reply_status , size_t* 
 		else
 			return NULL;
 	}
-	rep[i]=0;
+	((char*)(rep))[i]=0;
 	sscanf(rep,"REP 1.0 %s %d",reply_status,data_sz);
 	return rep+i+2;
 }
