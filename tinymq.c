@@ -63,8 +63,8 @@ void msg_log( int loglevel , const char* fmt , ... ) {
     va_list vlist;
     if( LOG_OPTION == LOG_NOLOG )
         return;
-    va_start(vlist,fmt);
     if( LOG_OPTION & LOG_FILE ) {
+        va_start(vlist,fmt);
         switch(loglevel) {
         case LOG_INFO:
             file = fopen("tinymq.log.info.txt","a+");
@@ -87,6 +87,7 @@ void msg_log( int loglevel , const char* fmt , ... ) {
         fclose(file);
     }
     if( LOG_OPTION & LOG_STDOUT ) {
+        va_start(vlist,fmt);
         switch(loglevel) {
         case LOG_INFO:
             printf("[INFO]:");
