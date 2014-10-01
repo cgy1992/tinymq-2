@@ -1,13 +1,12 @@
 #include <network.h>
-#ifdef __APPLE__
-#include <malloc/malloc.h>
-#else
+#ifndef __APPLE__
 #include <malloc.h>
 #endif
 #include <stdio.h>
 #include <errno.h>
 #include <string.h>
 #include <assert.h>
+#include <stdlib.h>
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -117,7 +116,7 @@ int parse_arg( struct arg_t* arg , int argc , char** argv ) {
 
 char* format_request( const struct arg_t* arg , int* len ) {
     char header[128];
-    int sz = sprintf(header,"%s 1.0 %s %d %s\r\n",arg->type,arg->option,arg->data_len,arg->key);
+    int sz = sprintf(header,"%s 1.0 %s %u %s\r\n",arg->type,arg->option,arg->data_len,arg->key);
     char* buf = malloc( sz + arg->data_len );
     memcpy(buf,header,sz);
     if( arg->data_len != 0 && arg->data != NULL )

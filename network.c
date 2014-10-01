@@ -1,7 +1,5 @@
 #include "network.h"
-#ifdef __APPLE__
-#include <malloc/malloc.h>
-#else
+#ifndef __APPLE__
 #include <malloc.h>
 #endif // __APPLE__
 #include <assert.h>
@@ -10,6 +8,7 @@
 #include <string.h>
 #include <errno.h>
 #include <stdint.h>
+#include <stdlib.h>
 
 #ifndef _WIN32
 #include <sys/select.h>
@@ -596,7 +595,7 @@ static void do_accept( struct net_server_t* server ) {
         if( sock == invalid_socket_handler ) {
             error_code = net_has_error();
             if( error_code != 0 ) {
-                server->cb(error_code,NULL);
+                server->cb(error_code,server,NULL);
             }
             return;
         } else {
@@ -605,7 +604,7 @@ static void do_accept( struct net_server_t* server ) {
             conn = connection_create(sock);
             connection_add(server,conn);
             conn->pending_event = NET_EV_CLOSE;
-            pending_ev = server->cb(0,conn);
+            pending_ev = server->cb(0,server,conn);
             if( conn->cb == NULL )
                 conn->pending_event = NET_EV_CLOSE;
             else

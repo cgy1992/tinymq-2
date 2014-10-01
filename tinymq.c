@@ -1,9 +1,7 @@
 #include <stddef.h>
 #include <stdint.h>
 #include <stdio.h>
-#ifdef __APPLE__
-#include <malloc/malloc.h>
-#else
+#ifndef __APPLE__
 #include <malloc.h>
 #endif // __APPLE__
 #include <stdlib.h>
@@ -385,7 +383,7 @@ int _proto_parser_peek_buffer( struct proto_parser_t* parser , void* dest , size
     if( ebuf_len + parser->cache_size < dest_len )
         return -1;
     // From internal cache
-    for( i ; i < parser->cache_size && dest_size < dest_len ; ++i ) {
+    for( ; i < parser->cache_size && dest_size < dest_len ; ++i ) {
         cdest[dest_size++] = parser->cache[i];
     }
     if( dest_size == dest_len ) {
@@ -405,7 +403,7 @@ int _proto_parser_peek_buffer_until( struct proto_parser_t* parser , void* dest 
     size_t dest_len = 0;
     size_t buffer_sz = buf_sz;
     char* cdest = (char*)(dest);
-    for( i ; i < parser->cache_size && buf_sz != 0 ; ++i , -- buf_sz ) {
+  for( ; i < parser->cache_size && buf_sz != 0 ; ++i , -- buf_sz ) {
         cdest[dest_len++] = parser->cache[i];
         if( parser->cache[i] == cha ) {
             *len = dest_len;
@@ -1044,7 +1042,8 @@ int net_msg_proto_read_handler( int ev , int ec , struct net_connection_t* conn 
     }
 }
 
-int net_msg_accept( int err_code , struct net_connection_t* connection ) {
+int net_msg_accept( int err_code , struct net_server_t* ser, struct net_connection_t* connection ) {
+    (void*)ser;
     if( err_code == 0 ) {
         struct proto_parser_t* p = malloc( sizeof(struct proto_parser_t) );
         proto_parser_init(p);
