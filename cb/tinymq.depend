@@ -1,0 +1,25 @@
+# depslib dependency file v1.0
+1412035009 source:/home/dian/Dropbox/tinymq/server-main.c
+	"tinymq.c"
+
+1412116795 /home/dian/Dropbox/tinymq/tinymq.c
+	<stddef.h>
+	<stdint.h>
+	<stdio.h>
+	<malloc/malloc.h>
+	<malloc.h>
+	<stdlib.h>
+	<assert.h>
+	<errno.h>
+	<network.h>
+	<stdlib.h>
+	<stdarg.h>
+	<string.h>
+
+1411794916 /home/dian/Dropbox/tinymq/network.h
+	<stddef.h>
+	<WinSock2.h>
+	<windows.h>
+	<sys/socket.h>
+	<netinet/in.h>
+

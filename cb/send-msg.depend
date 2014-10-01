@@ -1,0 +1,16 @@
+# depslib dependency file v1.0
+1412032995 source:/home/dian/Dropbox/tinymq/send-msg.c
+	<network.h>
+	<malloc/malloc.h>
+	<malloc.h>
+	<stdio.h>
+	<errno.h>
+	<string.h>
+
+1411794916 /home/dian/Dropbox/tinymq/network.h
+	<stddef.h>
+	<WinSock2.h>
+	<windows.h>
+	<sys/socket.h>
+	<netinet/in.h>
+
