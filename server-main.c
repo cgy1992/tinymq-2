@@ -10,7 +10,7 @@ struct arg_t {
     const char* log_option;
 };
 
-static const char* HELP = "--addr : ip address \n --port : port number --log-option: log option of/f/o/<null> \n";
+static const char* HELP = "--addr : ip address \n--port : port number \n--log-option: log option of/f/o/<null> \n";
 
 int parse_arg( struct arg_t* out , int argc , char** argv ) {
     if( argc != 7 && argc != 5  ) {
