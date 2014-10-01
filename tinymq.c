@@ -405,7 +405,7 @@ int _proto_parser_peek_buffer_until( struct proto_parser_t* parser , void* dest 
     size_t dest_len = 0;
     size_t buffer_sz = buf_sz;
     char* cdest = (char*)(dest);
-  for( ; i < parser->cache_size && buf_sz != 0 ; ++i , -- buf_sz ) {
+    for( ; i < parser->cache_size && buf_sz != 0 ; ++i , -- buf_sz ) {
         cdest[dest_len++] = parser->cache[i];
         if( parser->cache[i] == cha ) {
             *len = dest_len;
