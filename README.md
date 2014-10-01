@@ -16,7 +16,7 @@ For protocol serializer ,you can write it like this:
 ```
 void* serialize_request( const char* req_name , const char* option , const char* key , const char* data , size_t data_sz ) {
 	char header[128];
-	int header_sz = sprintf(header,"%s 1.0 %s %u %s\r\n",req_name,option,sz,key);
+	int header_sz = sprintf(header,"%s 1.0 %s %u %s\r\n",req_name,option,data_sz,key);
 	char* req = malloc(data_sz+header_sz);
 	memcpy(req,header,header_sz);
 	memcpy(req+header_sz,data,data_sz);
