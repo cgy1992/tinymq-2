@@ -14,12 +14,12 @@ get the library and set up the environment would be more expensive than just wri
 
 For protocol serializer ,you can write it like this:
 ```
-void* serialize_request( const char* req_name , const char* option , const char* key , const char* data , size_t sz ) {
+void* serialize_request( const char* req_name , const char* option , const char* key , const char* data , size_t data_sz ) {
 	char header[128];
 	int header_sz = sprintf(header,"%s 1.0 %s %u %s\r\n",req_name,option,sz,key);
-	char* req = malloc(sz+header_sz);
+	char* req = malloc(data_sz+header_sz);
 	memcpy(req,header,header_sz);
-	memcpy(req+header_sz,data,sz);
+	memcpy(req+header_sz,data,data_sz);
 	return req;
 }
 ```
@@ -40,8 +40,10 @@ void* parse_request( void* rep ,  size_t rep_len , char* reply_status , size_t* 
 }
 ```
 ##Detail of Protocol
-Protocol is a request/reply protocol and transfer using TCP. 
-1. The request has 2 method currently, one is PUT , the other is GET. For request structure, it looks like this:
+Protocol is a request/reply protocol and transfer using TCP.
+ 
+###Request
+The request has 2 method currently, one is PUT , the other is GET. For request structure, it looks like this:
 [MethodName][Space][Version][Space][Option][Space][DataLen][Space][Name]\r\n[Data]
 So a typical PUT request is like this:
 PUT 1.0 L10000 1024 Key1\r\n...
@@ -58,8 +60,9 @@ T10000: after 10 seconds and then delete it
 L1000|T10000: delete it after 10 seconds or 1000 times visit, whichever comes first
 L1000&T10000: 10 seconds and 1000 times visit both satisfy and then delete it
 
-2. For the reply, it is simple as hell. 
-	REP 1.0 FAIL/OK [DATA-LENGTH]\r\n--data--
+###Reply
+For the reply, it is very simple:
+REP 1.0 FAIL/OK [DATA-LENGTH]\r\n--data--
 
 ##Command line tool
 A simple command line tool is provided for doing this message exchange.
