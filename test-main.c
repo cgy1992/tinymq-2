@@ -175,7 +175,7 @@ struct case_t {
 struct case_t TEST_CASE;
 size_t TEST_SIZE;
 struct net_server_t SERVER;
-static const char* ADDRESS="10.1.5.108:12345";
+static const char* ADDRESS="127.0.0.1:12345";
 
 #define INSERT_CASE(x) \
     do { \
