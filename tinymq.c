@@ -291,8 +291,7 @@ int msg_table_remove( struct msg_table_t* table , const char* name , void** data
 
 enum {
     PROTO_PUT=0,
-    PROTO_GET,
-    PROTO_TEST // Not ready yet
+    PROTO_GET
 };
 
 enum {
@@ -645,15 +644,8 @@ int _proto_request_parse_option_comb( struct proto_parser_t* parser , char* buff
     errno = 0;
     parser->timeout = (int)strtol(timeout_str,NULL,10);
     parser->limits = (int)strtoul(limits_str,NULL,10);
-    if( errno != 0 )
+    if( errno != 0 || parser->timeout <0 )
         return PROTO_ERR_UNKNOWN_OPTION;
-    else if( parser->type == PROTO_GET ||
-             parser->type == PROTO_PUT ) {
-        // For these 2 types, we don't allow the negative timer value
-        if(parser->timeout <0) {
-            return PROTO_ERR_UNKNOWN_OPTION;
-        }
-    }
     return 0;
 }
 
