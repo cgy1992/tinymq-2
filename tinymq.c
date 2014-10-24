@@ -1,9 +1,6 @@
 #include <stddef.h>
 #include <stdint.h>
 #include <stdio.h>
-#ifndef __APPLE__
-#include <malloc.h>
-#endif // __APPLE__
 #include <stdlib.h>
 #include <assert.h>
 #include <errno.h>
