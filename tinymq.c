@@ -834,7 +834,7 @@ void _net_msg_handle_query( struct msg_put_t* put_msg , const char* name ) {
         case PROTO_OPTION_TIMEOUT_OR_LIMITS:
             if( put_msg->limits == 0 ) {
                 if( put_msg->conn != NULL ) {
-                    net_cancel(put_msg->conn);
+                    net_stop(put_msg->conn);
                     put_msg->conn = NULL;
                 }
                 goto free_resource;
