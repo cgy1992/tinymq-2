@@ -107,21 +107,21 @@ void msg_log( int loglevel , const char* fmt , ... ) {
     }
 }
 
-struct msg_t {
+struct msg {
     size_t fullhash;
     void* data; // data value
     char name[MAX_MSGNAME_LEN+1];
-    struct msg_t* next;
-    struct msg_t* prev;
+    struct msg* next;
+    struct msg* prev;
 };
 
 // Chain for resolving the collision
-struct msg_bucket_t {
-    struct msg_t entry;
+struct msg_bucket {
+    struct msg entry;
 };
 
-struct msg_table_t {
-    struct msg_bucket_t* buckets;
+struct msg_table {
+    struct msg_bucket* buckets;
     size_t cap;
     size_t size;
 };
@@ -141,9 +141,9 @@ struct msg_table_t {
     } while(0)
 
 
-void _msg_table_alloc( struct msg_table_t* table , size_t cap ) {
+void _msg_table_alloc( struct msg_table* table , size_t cap ) {
     size_t i;
-    table->buckets = malloc( sizeof(struct msg_bucket_t)*cap );
+    table->buckets = malloc( sizeof(struct msg_bucket)*cap );
     VERIFY(table->buckets != NULL);
     table->cap = cap;
     for( i = 0 ; i < cap ; ++i ) {
@@ -161,7 +161,7 @@ size_t _msg_table_hash( const char* name ) {
     return val;
 }
 
-void msg_table_init( struct msg_table_t* table ) {
+void msg_table_init( struct msg_table* table ) {
     _msg_table_alloc(table,INIT_MSGTABLE_LEN);
     table->size =0;
 }
@@ -169,11 +169,11 @@ void msg_table_init( struct msg_table_t* table ) {
 // Query the slot in the table based on the struct msg_t*, if we have full
 // hash value for the string sequence
 
-struct msg_t*
-_msg_table_query_slot( struct msg_table_t* table , struct msg_t* msg , int* use ) {
-    struct msg_bucket_t* bucket;
+struct msg*
+_msg_table_query_slot( struct msg_table* table , struct msg* msg , int* use ) {
+    struct msg_bucket* bucket;
     size_t bucket_pos;
-    struct msg_t* slot;
+    struct msg* slot;
     bucket_pos = msg->fullhash & (table->cap-1);
     bucket = table->buckets + bucket_pos;
     slot = &(bucket->entry);
@@ -189,9 +189,9 @@ _msg_table_query_slot( struct msg_table_t* table , struct msg_t* msg , int* use 
 }
 
 // This function will perform rehash when the hash function is full
-void _msg_table_rehash( struct msg_table_t* table ) {
-    struct msg_table_t new_table;
-    struct msg_t* slot;
+void _msg_table_rehash( struct msg_table* table ) {
+    struct msg_table new_table;
+    struct msg* slot;
     size_t i;
     int use;
     msg_log(LOG_INFO,"Rehash the message queue:%d",table->cap*2);
@@ -201,7 +201,7 @@ void _msg_table_rehash( struct msg_table_t* table ) {
         for ( slot = (table->buckets[i].entry.next) ;
               slot != &(table->buckets[i].entry) ;
               slot = slot->next ) {
-            struct msg_t* tail = _msg_table_query_slot(&new_table,slot,&use);
+            struct msg* tail = _msg_table_query_slot(&new_table,slot,&use);
             MSG_TABLE_INSERT(tail,slot);
             assert(use ==0);
         }
@@ -211,10 +211,10 @@ void _msg_table_rehash( struct msg_table_t* table ) {
     table->cap *= 2;
 }
 
-int msg_table_insert( struct msg_table_t* table , void* data , const char* name ) {
-    struct msg_t msg;
+int msg_table_insert( struct msg_table* table , void* data , const char* name ) {
+    struct msg msg;
     int use;
-    struct msg_t* tail;
+    struct msg* tail;
     assert(name[0] != 0);
     msg.fullhash = _msg_table_hash(name);
     msg.data = data;
@@ -229,7 +229,7 @@ int msg_table_insert( struct msg_table_t* table , void* data , const char* name 
     }
     tail = _msg_table_query_slot(table,&msg,&use);
     if( use == 0 ) {
-        struct msg_t* new_msg = malloc(sizeof(msg));
+        struct msg* new_msg = malloc(sizeof(msg));
         VERIFY(new_msg != NULL);
         memcpy(new_msg,&msg,sizeof(*new_msg));
         MSG_TABLE_INSERT(tail,new_msg);
@@ -240,14 +240,14 @@ int msg_table_insert( struct msg_table_t* table , void* data , const char* name 
     }
 }
 
-struct msg_t* msg_table_query( struct msg_table_t* table , const char* name ) {
+struct msg* msg_table_query( struct msg_table* table , const char* name ) {
     if( strlen(name) > MAX_MSGNAME_LEN ) {
         return NULL;
     } else {
         int fh = _msg_table_hash(name);
         int bucket_slot = (fh & (table->cap-1));
-        struct msg_bucket_t* bucket = table->buckets + bucket_slot;
-        struct msg_t* slot = bucket->entry.next;
+        struct msg_bucket* bucket = table->buckets + bucket_slot;
+        struct msg* slot = bucket->entry.next;
         for( ; slot != &(bucket->entry) ; slot = slot->next ) {
             if( slot->fullhash == fh && strcmp(slot->name,name) == 0 ) {
                 return slot;
@@ -257,8 +257,8 @@ struct msg_t* msg_table_query( struct msg_table_t* table , const char* name ) {
     }
 }
 
-int msg_table_remove( struct msg_table_t* table , const char* name , void** data ) {
-    struct msg_t* msg = msg_table_query(table,name);
+int msg_table_remove( struct msg_table* table , const char* name , void** data ) {
+    struct msg* msg = msg_table_query(table,name);
     if( msg == NULL )
         return -1;
     *data = msg->data;
@@ -309,7 +309,7 @@ enum {
     PROTO_DONE
 };
 
-struct proto_parser_t {
+struct proto_parser {
     int state;
     int type;    // type
     int major_version; // version number
@@ -372,7 +372,7 @@ const char* proto_error( int err_code ) {
 }
 
 // This routine will return the next buffer from the buffer or cache buffer
-int _proto_parser_peek_buffer( struct proto_parser_t* parser , void* dest , size_t dest_len , void* ebuf , size_t ebuf_len ) {
+int _proto_parser_peek_buffer( struct proto_parser* parser , void* dest , size_t dest_len , void* ebuf , size_t ebuf_len ) {
     size_t i = 0;
     size_t dest_size = 0;
     char* cdest = (char*)(dest);
@@ -394,7 +394,7 @@ int _proto_parser_peek_buffer( struct proto_parser_t* parser , void* dest , size
 }
 
 // This version of function is used to help figure out the variant name
-int _proto_parser_peek_buffer_until( struct proto_parser_t* parser , void* dest , size_t buf_sz ,
+int _proto_parser_peek_buffer_until( struct proto_parser* parser , void* dest , size_t buf_sz ,
                                      char cha , void* ebuf , size_t ebuf_len , size_t* len ) {
     size_t i = 0;
     size_t dest_len = 0;
@@ -426,7 +426,7 @@ int _proto_parser_peek_buffer_until( struct proto_parser_t* parser , void* dest 
 }
 
 // Call this function to make the peek buffer move effects the internal cache
-void _proto_parser_commit_buffer( struct proto_parser_t* parser , size_t len ) {
+void _proto_parser_commit_buffer( struct proto_parser* parser , size_t len ) {
     if( parser->cache_size <= len ) {
         parser->cache_size = 0;
     } else {
@@ -437,7 +437,7 @@ void _proto_parser_commit_buffer( struct proto_parser_t* parser , size_t len ) {
     }
 }
 
-int _proto_parser_cache_buffer( struct proto_parser_t* parser , void* ebuf , size_t ebuf_len ) {
+int _proto_parser_cache_buffer( struct proto_parser* parser , void* ebuf , size_t ebuf_len ) {
     if( parser->cache_size + ebuf_len > MAX_PROTOCACHE_LEN ) {
         return -1;
     } else {
@@ -447,7 +447,7 @@ int _proto_parser_cache_buffer( struct proto_parser_t* parser , void* ebuf , siz
     }
 }
 
-int _proto_request_parse_type( struct proto_parser_t* parser , void* buffer , size_t len , int* off ) {
+int _proto_request_parse_type( struct proto_parser* parser , void* buffer , size_t len , int* off ) {
     char buf[4];
     int offset = _proto_parser_peek_buffer(parser,buf,4,buffer,len);
     if( offset < 0 ) {
@@ -479,7 +479,7 @@ int _proto_request_parse_type( struct proto_parser_t* parser , void* buffer , si
     return 0;
 }
 
-int _proto_request_parse_version( struct proto_parser_t* parser , void* buffer , size_t len , int* off ) {
+int _proto_request_parse_version( struct proto_parser* parser , void* buffer , size_t len , int* off ) {
     // Version. We have a extra space and version number.
     // The longest version number should be 3 at most which
     // is 9.9
@@ -506,7 +506,7 @@ int _proto_request_parse_version( struct proto_parser_t* parser , void* buffer ,
     return 0;
 }
 
-int _proto_request_parse_len( struct proto_parser_t* parser , void* buffer , size_t len , int* off ) {
+int _proto_request_parse_len( struct proto_parser* parser , void* buffer , size_t len , int* off ) {
     // The largest data chunk we can receive is 1MB
     // which is 1024*1024 , so at most it has 7 digits
     // plus an extra space, it has 8 digits.
@@ -540,7 +540,7 @@ int _proto_request_parse_len( struct proto_parser_t* parser , void* buffer , siz
     return 0;
 }
 
-int _proto_request_parse_name( struct proto_parser_t* parser , void* buffer , size_t len , int* off ) {
+int _proto_request_parse_name( struct proto_parser* parser , void* buffer , size_t len , int* off ) {
     char buf[128];
     size_t str_len;
     int offset;
@@ -574,7 +574,7 @@ int _proto_request_parse_name( struct proto_parser_t* parser , void* buffer , si
     return 0;
 }
 
-int _proto_request_parse_data( struct proto_parser_t* parser , void* buffer , size_t len ) {
+int _proto_request_parse_data( struct proto_parser* parser , void* buffer , size_t len ) {
     size_t left_buffer_len = len + parser->cache_size;
     if( left_buffer_len + parser->data_size > parser->data_len )
         return PROTO_ERR_TOO_LARGE_DATA;
@@ -608,7 +608,7 @@ const char* strchar2( const char* str , const char* delimiter ) {
     return NULL;
 }
 
-int _proto_request_parse_option_comb( struct proto_parser_t* parser , char* buffer , int str_len , const char* delimiter ) {
+int _proto_request_parse_option_comb( struct proto_parser* parser , char* buffer , int str_len , const char* delimiter ) {
     const char* limits_str;
     const char* timeout_str;
     int off = delimiter-buffer;
@@ -646,7 +646,7 @@ int _proto_request_parse_option_comb( struct proto_parser_t* parser , char* buff
     return 0;
 }
 
-int _proto_request_parse_option( struct proto_parser_t* parser , void* buffer , size_t len , int* off ) {
+int _proto_request_parse_option( struct proto_parser* parser , void* buffer , size_t len , int* off ) {
     // Largest number for 32 bits integer will have 10 digits. So at most we need
     // L10|R10 --> 10 + 10 + 1 + 1 + 1 = 23 and a extra space
     char buf[24];
@@ -716,7 +716,7 @@ int _proto_request_parse_option( struct proto_parser_t* parser , void* buffer , 
             return parser->state == PROTO_DONE ? 0 : 1; \
     } while(0)
 
-int proto_request_parse( struct proto_parser_t* parser , void* buffer , size_t len ) {
+int proto_request_parse( struct proto_parser* parser , void* buffer , size_t len ) {
     int offset;
     int ret;
     do {
@@ -784,7 +784,7 @@ int proto_request_parse( struct proto_parser_t* parser , void* buffer , size_t l
     } while( 1 );
 }
 
-void proto_parser_clear( struct proto_parser_t* parser ) {
+void proto_parser_clear( struct proto_parser* parser ) {
     if( parser->name )
         free((void*)parser->name);
     if( parser->data )
@@ -796,36 +796,36 @@ void proto_parser_clear( struct proto_parser_t* parser ) {
 
 // Network part
 
-static struct msg_table_t MSG_TABLE; // Our global message table
-struct net_server_t SERVER; // Net server
+static struct msg_table MSG_TABLE; // Our global message table
+struct net_server SERVER; // Net server
 
 #define CONNECTION_TIMEOUT 30000 // 30 seconds
 
-struct msg_get_t {
+struct msg_get {
     int timeout;
     int freq;
     const char* name;
 };
 
-struct msg_put_t {
+struct msg_put {
     int limits;
     int option_type;
-    struct net_connection_t* conn;
+    struct net_connection* conn;
     void* data;
     size_t data_len;
 };
 
-void _msg_get_clear( struct msg_get_t* msg ) {
+void _msg_get_clear( struct msg_get* msg ) {
     free((void*)msg->name);
     free(msg);
 }
 
-void _msg_put_clear( struct msg_put_t* msg ) {
+void _msg_put_clear( struct msg_put* msg ) {
     free(msg->data);
     free(msg);
 }
 
-void _net_msg_handle_query( struct msg_put_t* put_msg , const char* name ) {
+void _net_msg_handle_query( struct msg_put* put_msg , const char* name ) {
     void* data;
     if( put_msg->option_type != PROTO_OPTION_TIMEOUT ) {
         --(put_msg->limits);
@@ -853,18 +853,18 @@ free_resource:
     }
 }
 
-int net_handler_get_callback( int ev , int ec , struct net_connection_t* conn ) {
+int net_handler_get_callback( int ev , int ec , struct net_connection* conn ) {
     if( ec != 0 ) {
         free(conn->user_data);
         return NET_EV_CLOSE;
     } else {
         if( ev & NET_EV_TIMEOUT ) {
-            struct msg_get_t* get_msg = (struct msg_get_t*)conn->user_data;
-            struct msg_t* m = msg_table_query( &MSG_TABLE , get_msg->name );
+            struct msg_get* get_msg = (struct msg_get*)conn->user_data;
+            struct msg* m = msg_table_query( &MSG_TABLE , get_msg->name );
             if( m != NULL ) {
                 // Format the reply now and send it back to our user
                 char header[128];
-                struct msg_put_t* put_msg = (struct msg_put_t*)(m->data);
+                struct msg_put* put_msg = (struct msg_put*)(m->data);
                 int header_sz = sprintf(header,"REP %d.%d OK %u\r\n",MAJOR_VERSION,MINOR_VERSION,put_msg->data_len);
                 // Write to the buffer now
                 net_buffer_produce(&(conn->out),header,(size_t)header_sz);
@@ -892,14 +892,14 @@ int net_handler_get_callback( int ev , int ec , struct net_connection_t* conn ) 
     }
 }
 
-int net_handler_put_callback( int ev , int ec , struct net_connection_t* conn ) {
+int net_handler_put_callback( int ev , int ec , struct net_connection* conn ) {
     void* data;
     if( ev & NET_EV_TIMEOUT ) {
         const char* name = (const char*)(conn->user_data);
-        struct msg_t* m = msg_table_query(&MSG_TABLE,name);
-        struct msg_put_t* put_msg;
+        struct msg* m = msg_table_query(&MSG_TABLE,name);
+        struct msg_put* put_msg;
         assert( m != NULL );
-        put_msg = (struct msg_put_t*)m->data;
+        put_msg = (struct msg_put*)m->data;
         put_msg->conn = NULL;
         switch( put_msg->option_type ) {
         case PROTO_OPTION_TIMEOUT:
@@ -923,14 +923,14 @@ delete_resource:
     return NET_EV_CLOSE;
 }
 
-int net_handle_request( struct proto_parser_t* parser , struct net_connection_t* conn ) {
+int net_handle_request( struct proto_parser* parser , struct net_connection* conn ) {
     if( parser->type == PROTO_GET ) {
         // Try to get the data from the cache directly now
-        struct msg_t* m = msg_table_query(&MSG_TABLE,parser->name);
+        struct msg* m = msg_table_query(&MSG_TABLE,parser->name);
         if( m == NULL ) {
             // We are not lucky here, no message is found, so we need to make
             // our client wait for the time it signals for us
-            struct msg_get_t* msg = malloc(sizeof(struct msg_get_t));
+            struct msg_get* msg = malloc(sizeof(struct msg_get));
             VERIFY(msg != NULL);
             msg->freq = 10;
             msg->timeout = parser->timeout/msg->freq;
@@ -942,7 +942,7 @@ int net_handle_request( struct proto_parser_t* parser , struct net_connection_t*
             conn->cb = net_handler_get_callback;
             return NET_EV_TIMEOUT;
         } else {
-            struct msg_put_t*  put_msg = (struct msg_put_t*)(m->data);
+            struct msg_put*  put_msg = (struct msg_put*)(m->data);
             char header[128];
             int header_sz = sprintf(header,"REP %d.%u OK %u\r\n",MAJOR_VERSION,MINOR_VERSION,put_msg->data_len);
             assert( strcmp(m->name,parser->name) == 0 );
@@ -957,7 +957,7 @@ int net_handle_request( struct proto_parser_t* parser , struct net_connection_t*
     } else {
         char header[128];
         int header_sz;
-        struct msg_put_t* put_msg = malloc( sizeof( struct msg_put_t ) );
+        struct msg_put* put_msg = malloc( sizeof( struct msg_put ) );
         VERIFY(put_msg != NULL);
         put_msg->data = parser->data;
         put_msg->data_len = parser->data_len;
@@ -989,8 +989,8 @@ int net_handle_request( struct proto_parser_t* parser , struct net_connection_t*
 // This handler is used as the first phase for reading the protocol. Once the protocol
 // is ready and parsing finished, we will turn the internal state to the next stage based
 // on the user's protocol type.
-int net_msg_proto_read_handler( int ev , int ec , struct net_connection_t* conn ) {
-    struct proto_parser_t* parser = (struct proto_parser_t*)(conn->user_data);
+int net_msg_proto_read_handler( int ev , int ec , struct net_connection* conn ) {
+    struct proto_parser* parser = (struct proto_parser*)(conn->user_data);
     // Get the data out of the buffer now and parse it
     if( ec != 0 || ((ev & NET_EV_EOF) && parser->state != PROTO_DONE) ) {
         proto_parser_clear(parser);
@@ -1038,9 +1038,9 @@ int net_msg_proto_read_handler( int ev , int ec , struct net_connection_t* conn 
     }
 }
 
-int net_msg_accept( int err_code , struct net_server_t* ser, struct net_connection_t* connection ) {
+int net_msg_accept( int err_code , struct net_server_t* ser, struct net_connection* connection ) {
     if( err_code == 0 ) {
-        struct proto_parser_t* p = malloc( sizeof(struct proto_parser_t) );
+        struct proto_parser* p = malloc( sizeof(struct proto_parser) );
         proto_parser_init(p);
         connection->cb = net_msg_proto_read_handler;
         connection->user_data = p;

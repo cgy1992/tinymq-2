@@ -10,7 +10,7 @@
 void msg_table_utest() {
     int i;
     int* iarray ;
-    struct msg_table_t msg_table;
+    struct msg_table msg_table;
     char name[12];
     // Initialize the message table
     msg_table_init(&msg_table);
@@ -27,7 +27,7 @@ void msg_table_utest() {
     }
     // Search some data
     for( i = 0 ; i < 128 ; ++i ) {
-        struct msg_t* m;
+        struct msg* m;
         sprintf(name,"%d",i);
         m = msg_table_query(&msg_table,name);
         assert( m != NULL );
@@ -52,7 +52,7 @@ void msg_table_utest() {
 }
 
 void proto_parser_utest() {
-    struct proto_parser_t p;
+    struct proto_parser p;
     int ret;
     const char* data = "ABCDEFGHIJ";
     const char* proto1 = "PUT 1.0 T100|L100 10 Name1\r\n" \
@@ -91,7 +91,7 @@ void proto_parser_utest() {
 }
 
 void proto_parser_partial_utest() {
-    struct proto_parser_t p;
+    struct proto_parser p;
     int i;
     const char* data = "ABCDEFGHIJ";
     const char* proto1 = "PUT 1.0 T100|L100 10 Name1\r\n" \
@@ -161,20 +161,20 @@ const char* rand_str( int min , int max , int* sz ) {
 
 // We don't use timeout since it is not very deterministic and also not very accurate
 
-struct case_t {
+struct test_case {
     const char* key;
     const char* data;
     int data_len;
     int get_times;
     int try_times;
     int allowed_times;
-    struct case_t* next;
-    struct case_t* prev;
+    struct test_case* next;
+    struct test_case* prev;
 };
 
-struct case_t TEST_CASE;
+struct test_case TEST_CASE;
 size_t TEST_SIZE;
-struct net_server_t SERVER;
+struct net_server SERVER;
 static const char* ADDRESS="127.0.0.1:12345";
 
 #define INSERT_CASE(x) \
@@ -199,13 +199,13 @@ static const char* ADDRESS="127.0.0.1:12345";
         TEST_CASE.prev=&TEST_CASE; \
     } while(0)
 
-struct case_t* gen_put() {
+struct test_case* gen_put() {
     int val;
     if( TEST_SIZE == MAX_CONNECTION ) {
         return 0;
     } else {
         // generate a new test case
-        struct case_t* new_case = malloc(sizeof(struct case_t));
+        struct test_case* new_case = malloc(sizeof(struct test_case));
         val = rand();
         new_case->allowed_times = (int)(((double)val/RAND_MAX)*(MAX_LIMITS-MIN_LIMITS) + MIN_LIMITS);
         new_case->get_times = 0;
@@ -220,11 +220,11 @@ struct case_t* gen_put() {
     }
 }
 
-int req_put( int ev , int ec , struct net_connection_t* conn ) {
+int req_put( int ev , int ec , struct net_connection* conn ) {
     if( ec != 0 )
         return NET_EV_CLOSE;
     if( ev & NET_EV_CONNECT ) {
-        struct case_t* new_case = gen_put();
+        struct test_case* new_case = gen_put();
         char header[128];
         int sz = sprintf(header,"PUT 1.0 L%d %d %s\r\n",new_case->allowed_times,new_case->data_len,new_case->key);
         net_buffer_produce(&(conn->out),header,sz);
@@ -251,8 +251,8 @@ char* get_data( void* data , size_t len , int* sz ) {
 }
 
 
-struct case_t* del_case( struct case_t* c ) {
-    struct case_t* n = c->prev;
+struct test_case* del_case( struct test_case* c ) {
+    struct test_case* n = c->prev;
     free((void*)c->data);
     free((void*)c->key);
     REMOVE_CASE(c);
@@ -260,8 +260,8 @@ struct case_t* del_case( struct case_t* c ) {
     return n;
 }
 
-int req_get( int ev , int ec , struct net_connection_t* conn ) {
-    struct case_t* c = (struct case_t*)(conn->user_data);
+int req_get( int ev , int ec , struct net_connection* conn ) {
+    struct test_case* c = (struct test_case*)(conn->user_data);
     if( ec != 0 || c == NULL )
         return NET_EV_CLOSE;
     if( ev & NET_EV_CONNECT ) {
@@ -298,11 +298,11 @@ int req_get( int ev , int ec , struct net_connection_t* conn ) {
     }
 }
 
-int timer_cb( int ev , int ec , struct net_connection_t* conn ) {
+int timer_cb( int ev , int ec , struct net_connection* conn ) {
     int i = TEST_SIZE;
     int gen_num = 0;
-    struct case_t* c;
-    struct case_t* pc;
+    struct test_case* c;
+    struct test_case* pc;
     // Generate PUT 
     for( ; i < MAX_CONNECTION ; ++i ) {
         // Connect to the remove server asynchronously 

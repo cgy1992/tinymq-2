@@ -32,7 +32,7 @@ extern "C" {
 // --key Name
 // --data "SomeData Here Is the Data"
 
-struct arg_t {
+struct cmd_arg {
     const char* data;
     size_t data_len;
     const char* addr;
@@ -49,7 +49,7 @@ static const char* HELP = "--addr : address \n" \
     "--data : data for the message\n" \
     "--type : type for the message\n";
 
-int parse_arg( struct arg_t* arg , int argc , char** argv ) {
+int parse_arg( struct cmd_arg* arg , int argc , char** argv ) {
     int i;
     arg->data = NULL;
     arg->data_len = 0;
@@ -114,7 +114,7 @@ int parse_arg( struct arg_t* arg , int argc , char** argv ) {
     return 0;
 }
 
-char* format_request( const struct arg_t* arg , int* len ) {
+char* format_request( const struct cmd_arg* arg , int* len ) {
     char header[128];
     int sz = sprintf(header,"%s 1.0 %s %u %s\r\n",arg->type,arg->option,arg->data_len,arg->key);
     char* buf = malloc( sz + arg->data_len );
@@ -180,7 +180,7 @@ int recv_rep( socket_t fd ) {
 
 int main( int argc , char** argv ) {
     socket_t fd;
-    struct arg_t cmd;
+    struct cmd_arg cmd;
     char addr[128];
     char* req;
     int ret;
