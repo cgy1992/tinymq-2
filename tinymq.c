@@ -1083,6 +1083,7 @@ void install_term_handler() {
     signal(SIGTERM,tinymq_stop);
     signal(SIGINT,tinymq_stop);
     signal(SIGTSTP,tinymq_stop);
+    signal(SIGPIPE, SIG_IGN);
 #endif
 }
 
