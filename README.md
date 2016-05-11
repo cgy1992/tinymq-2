@@ -79,6 +79,9 @@ A simple command line tool is provided for doing this message exchange.
 ##Dependency
 Tiny network, but the source code is included. So no dependency.
 
+##License
+The code is in PUBLIC DOMAIN.
+
 
 
 
